@@ -1,0 +1,155 @@
+/* Paleta da igreja: branco, marrom, dourado e verde. Letras grandes e botões grandes para todas as idades. */
+:root{
+  --branco:#FFFDF8; --creme:#FBF4E4; --papel:#FFFFFF;
+  --marrom:#3B1F12; --marrom2:#6A3A1E; --texto:#3A2A20; --suave:#6B5647;
+  --dourado:#F2B51D; --dourado-esc:#8A5F00; --dourado-cl:#FDF0C8;
+  --verde:#2F7A34; --verde-cl:#E4F2E1; --vermelho:#A3261E; --vermelho-cl:#FBE4E0;
+  --linha:#E7D8BC; --sombra:0 2px 10px rgba(59,31,18,.08);
+  --fs:20px;
+  --titulo:'Merriweather', Georgia, serif; --corpo:'Nunito Sans', 'Segoe UI', Arial, sans-serif;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html{font-size:var(--fs)}
+body{margin:0; background:var(--creme); color:var(--texto); font-family:var(--corpo); font-size:1rem; line-height:1.6; -webkit-text-size-adjust:100%}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--marrom2)}
+button,input,select,textarea{font:inherit; color:inherit}
+:focus-visible{outline:4px solid var(--dourado); outline-offset:2px}
+
+.topo{background:var(--marrom); color:var(--branco); padding:10px 16px; padding-top:calc(10px + env(safe-area-inset-top,0px)); border-bottom:5px solid var(--dourado)}
+.topo-in{max-width:960px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px}
+.marca{display:flex; align-items:center; gap:12px; color:inherit; text-decoration:none; min-width:0}
+.marca img{width:52px; height:auto; flex:none}
+.marca-txt{display:flex; flex-direction:column; line-height:1.2; min-width:0}
+.marca-txt b{font-family:var(--titulo); font-size:1.05rem; font-weight:900}
+.marca-txt small{font-size:.72rem; opacity:.85}
+.logo-escola{width:70px; height:auto; flex:none}
+
+main{max-width:960px; margin:0 auto; padding:24px 16px 80px; display:flex; flex-direction:column; gap:24px; outline:none}
+.carregando{text-align:center; color:var(--suave); padding:48px 0}
+h1,h2,h3{font-family:var(--titulo); color:var(--marrom); line-height:1.25; margin:0; text-wrap:balance}
+h1{font-size:1.6rem} h2{font-size:1.3rem} h3{font-size:1.1rem}
+p{margin:0}
+.sub{color:var(--suave)}
+.pilha{display:flex; flex-direction:column; gap:14px}
+.linha{display:flex; flex-wrap:wrap; gap:12px; align-items:center}
+.entre{justify-content:space-between}
+
+.cartao{background:var(--papel); border:1px solid var(--linha); border-radius:16px; padding:20px; box-shadow:var(--sombra); display:flex; flex-direction:column; gap:12px; min-width:0}
+.cartao.destaque{border:2px solid var(--dourado)}
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:56px; padding:12px 22px; border-radius:14px; border:2px solid transparent; font-weight:800; cursor:pointer; text-decoration:none; text-align:center; line-height:1.2}
+.btn-principal{background:var(--marrom); color:var(--branco)}
+.btn-principal:hover{background:var(--marrom2)}
+.btn-ouro{background:var(--dourado); color:var(--marrom)}
+.btn-verde{background:var(--verde); color:#fff}
+.btn-linha{background:var(--papel); color:var(--marrom); border-color:var(--marrom)}
+.btn-perigo{background:var(--papel); color:var(--vermelho); border-color:var(--vermelho)}
+.btn-peq{min-height:44px; padding:8px 14px; font-size:.85rem; border-radius:10px}
+.btn[disabled]{opacity:.55; cursor:not-allowed}
+.btn-bloco{width:100%}
+.voltar{align-self:flex-start}
+
+label.campo{display:flex; flex-direction:column; gap:6px; font-weight:800; color:var(--marrom)}
+.campo small{font-weight:600; color:var(--suave)}
+input[type=text],input[type=tel],input[type=password],input[type=date],select,textarea{width:100%; min-height:56px; padding:12px 14px; background:var(--branco); border:2px solid #CDB88F; border-radius:12px; font-size:1.05rem}
+textarea{min-height:130px; resize:vertical; line-height:1.5}
+input.pin{letter-spacing:.5em; font-size:1.6rem; text-align:center; font-weight:800; max-width:260px}
+
+/* Login */
+.login{max-width:520px; width:100%; margin:0 auto}
+.boas-vindas{text-align:center; display:flex; flex-direction:column; gap:8px; align-items:center}
+.boas-vindas img{width:120px}
+
+/* Resumo */
+.resumo{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+.num{background:var(--papel); border:1px solid var(--linha); border-radius:16px; padding:16px; text-align:center; box-shadow:var(--sombra)}
+.num b{display:block; font-family:var(--titulo); font-size:1.9rem; color:var(--marrom); line-height:1.1; font-variant-numeric:tabular-nums}
+.num span{font-size:.8rem; color:var(--suave); font-weight:700}
+@media (max-width:520px){.resumo{grid-template-columns:1fr 1fr}.resumo .num:last-child{grid-column:span 2}}
+
+/* Lista de aulas */
+.aulas{display:flex; flex-direction:column; gap:12px}
+.aula-item{display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:center; background:var(--papel); border:1px solid var(--linha); border-left:8px solid var(--linha); border-radius:16px; padding:16px; text-decoration:none; color:inherit; box-shadow:var(--sombra)}
+.aula-item.st-aberta{border-left-color:var(--dourado)}
+.aula-item.st-entregue{border-left-color:var(--verde)}
+.aula-item.st-expirada{border-left-color:var(--vermelho)}
+.aula-item.st-bloqueada{opacity:.75; background:#FAF6EE}
+.aula-num{width:56px; height:56px; border-radius:50%; background:var(--marrom); color:var(--dourado); font-family:var(--titulo); font-weight:900; font-size:1.3rem; display:flex; align-items:center; justify-content:center}
+.st-bloqueada .aula-num{background:#BFAE92; color:#fff}
+.aula-info{display:flex; flex-direction:column; gap:6px; min-width:0}
+.aula-info h3{font-size:1rem}
+.chip{display:inline-flex; align-items:center; gap:6px; align-self:flex-start; padding:4px 12px; border-radius:999px; font-size:.8rem; font-weight:800; line-height:1.4}
+.chip-aberta{background:var(--dourado-cl); color:var(--dourado-esc)}
+.chip-entregue{background:var(--verde-cl); color:var(--verde)}
+.chip-expirada{background:var(--vermelho-cl); color:var(--vermelho)}
+.chip-bloqueada{background:#EFE7D8; color:var(--suave)}
+.chip-pres{background:var(--verde-cl); color:var(--verde)}
+.chip-falta{background:var(--vermelho-cl); color:var(--vermelho)}
+
+/* Aula */
+.versiculo{background:var(--marrom); color:var(--branco); border-radius:16px; padding:22px; display:flex; flex-direction:column; gap:10px}
+.versiculo p{font-family:var(--titulo); font-size:1.05rem; line-height:1.6}
+.versiculo cite{font-style:normal; color:var(--dourado); font-weight:800}
+.secao h3{color:var(--marrom2)}
+.secao ul{margin:0; padding-left:1.2em; display:flex; flex-direction:column; gap:6px}
+.secao .ref{font-size:.85rem; color:var(--dourado-esc); font-weight:700}
+.prazo-box{background:var(--dourado-cl); border:2px solid var(--dourado); border-radius:16px; padding:16px; font-weight:700; color:var(--marrom)}
+
+/* Questões */
+.questao{background:var(--papel); border:1px solid var(--linha); border-radius:16px; padding:20px; display:flex; flex-direction:column; gap:14px; box-shadow:var(--sombra)}
+.q-enun{display:flex; gap:12px; font-weight:800; color:var(--marrom); font-size:1.05rem}
+.q-n{flex:none; width:40px; height:40px; border-radius:50%; background:var(--dourado); color:var(--marrom); display:flex; align-items:center; justify-content:center; font-family:var(--titulo)}
+.q-dica{font-size:.85rem; color:var(--suave); font-weight:700}
+.opcoes{display:flex; flex-direction:column; gap:10px}
+.opcao{display:flex; gap:14px; align-items:flex-start; padding:14px 16px; border:2px solid var(--linha); border-radius:12px; cursor:pointer; background:var(--branco)}
+.opcao input{width:28px; height:28px; flex:none; margin-top:2px; accent-color:var(--marrom)}
+.opcao:has(input:checked){border-color:var(--marrom); background:#FFF6DF}
+.opcao.certa{border-color:var(--verde); background:var(--verde-cl)}
+.opcao.errada{border-color:var(--vermelho); background:var(--vermelho-cl)}
+.vf-linha,.rel-linha{display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:center; padding:12px 14px; border:2px solid var(--linha); border-radius:12px; background:var(--branco)}
+.vf-bot{display:flex; gap:8px}
+.vf-bot label{min-width:56px; min-height:52px; display:flex; align-items:center; justify-content:center; border:2px solid var(--marrom); border-radius:10px; font-weight:900; cursor:pointer; color:var(--marrom)}
+.vf-bot input{position:absolute; opacity:0; pointer-events:none}
+.vf-bot label:has(input:checked){background:var(--marrom); color:var(--branco)}
+.vf-bot label:has(input:focus-visible){outline:4px solid var(--dourado)}
+.rel-linha select{width:auto; min-width:84px; font-weight:900}
+.legenda{display:flex; flex-direction:column; gap:4px; background:var(--creme); border-radius:12px; padding:12px 14px; font-size:.9rem}
+.legenda b{color:var(--marrom2)}
+.lacunas{line-height:2.6}
+.lacunas input{display:inline-block; width:190px; min-height:48px; margin:0 4px; padding:6px 10px}
+.certa-l{border-color:var(--verde)!important; background:var(--verde-cl)!important}
+.errada-l{border-color:var(--vermelho)!important; background:var(--vermelho-cl)!important}
+.feedback{border-radius:12px; padding:12px 14px; background:var(--creme); border-left:6px solid var(--dourado); font-size:.92rem}
+.feedback.ok{border-left-color:var(--verde)} .feedback.no{border-left-color:var(--vermelho)}
+.feedback b{color:var(--marrom)}
+.nota-grande{font-family:var(--titulo); font-size:2.6rem; color:var(--marrom); line-height:1}
+
+.confirmar{background:var(--dourado-cl); border:2px solid var(--dourado); border-radius:16px; padding:18px; display:flex; flex-direction:column; gap:12px}
+
+/* Barra de ferramentas da aula */
+.ferramentas{display:flex; flex-wrap:wrap; gap:8px}
+
+/* Professor */
+.abas{display:flex; gap:8px; flex-wrap:wrap; border-bottom:3px solid var(--linha); padding-bottom:8px}
+.aba{min-height:48px; padding:8px 16px; border-radius:12px 12px 0 0; border:none; background:transparent; font-weight:800; color:var(--suave); cursor:pointer}
+.aba[aria-selected=true]{background:var(--marrom); color:var(--branco)}
+.tabela-wrap{overflow-x:auto; border-radius:12px; border:1px solid var(--linha); background:var(--papel)}
+table{border-collapse:collapse; width:100%; font-size:.85rem}
+th,td{padding:10px 12px; border-bottom:1px solid var(--linha); text-align:left; vertical-align:top}
+th{background:var(--creme); color:var(--marrom); font-weight:800; white-space:nowrap}
+td.n{text-align:center; font-variant-numeric:tabular-nums; white-space:nowrap}
+.pres-bot{display:flex; gap:6px}
+.pres-bot .btn{min-width:110px}
+.pres-bot .ativo-p{background:var(--verde); color:#fff; border-color:var(--verde)}
+.pres-bot .ativo-f{background:var(--vermelho); color:#fff; border-color:var(--vermelho)}
+.pin-grande{font-family:var(--titulo); font-size:2.4rem; letter-spacing:.3em; color:var(--marrom); background:var(--dourado-cl); border-radius:12px; padding:8px 16px; align-self:flex-start}
+.resp-aluno{background:var(--creme); border-radius:10px; padding:10px 12px; white-space:pre-wrap}
+
+.aviso{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(20px + env(safe-area-inset-bottom,0px)); background:var(--marrom); color:var(--branco); padding:14px 22px; border-radius:14px; font-weight:800; box-shadow:0 6px 20px rgba(0,0,0,.25); max-width:calc(100% - 32px); z-index:10; text-align:center}
+.aviso.erro{background:var(--vermelho)}
+.rodape{text-align:center; font-size:.8rem; color:var(--suave)}
+@media (max-width:480px){ :root{--fs:19px} h1{font-size:1.4rem} .logo-escola{width:54px} .marca-txt small{display:none} .lacunas input{width:150px} }
+@media (prefers-reduced-motion:no-preference){ .aviso{animation:sobe .2s ease-out} @keyframes sobe{from{opacity:0; transform:translate(-50%,8px)} to{opacity:1; transform:translate(-50%,0)}} }
