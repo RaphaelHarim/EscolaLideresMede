@@ -450,7 +450,17 @@ async function telaSala(){
       const caixa = document.getElementById('video'); caixa.innerHTML = '';
       const opcoes = { iframeStyle:{ width:'100%', height:'100%', border:'0' }, showLeaveButton:true, showFullscreenButton:true };
       try { s.frame = Daily.createFrame(caixa, { ...opcoes, lang:'pt-BR' }); } catch(_) { s.frame = Daily.createFrame(caixa, opcoes); }
-      s.frame.on('left-meeting', () => terminar('Você saiu da aula.'));
+      let entrou = false;
+      s.frame.on('joined-meeting', () => { entrou = true; });
+      s.frame.on('left-meeting', () => { if (entrou) terminar('Você saiu da aula.'); });
+      s.frame.on('error', ev => { if (salaAtual !== s) return; const cod = (ev && ev.errorMsg) || '';
+        try { s.frame.destroy(); } catch(_) {} s.frame = null;
+        const v = document.getElementById('video'); if (!v) return;
+        const pagamento = /payment/i.test(cod);
+        v.outerHTML = `<div class="cartao" style="border:2px solid var(--vermelho)"><h2>O vídeo não abriu</h2>
+          <p>${pagamento ? (ehP ? 'A conta do Daily ainda não tem um cartão cadastrado. O Daily exige um cartão (em <b>Billing</b> no painel do Daily) para liberar as salas, mesmo usando só os minutos grátis.' : 'A sala de vídeo ainda não foi liberada pelo professor. Avise o professor. Sua presença continua sendo registrada.') : 'Não foi possível entrar na sala de vídeo agora. Tente sair e entrar de novo.'}</p>
+          <p class="sub peq">Código: ${esc(cod || 'desconhecido')}</p>
+          <a class="btn btn-linha" target="_blank" rel="noopener" href="${esc(link)}">Tentar abrir a sala em outra aba</a></div>`; });
       await s.frame.join({ url: link, userName: sessao.nome });
     } catch(e) { const v = document.getElementById('video'); if (v) v.outerHTML = `<div class="cartao"><p>${esc(e.message || 'Não foi possível abrir o vídeo aqui.')}</p><a class="btn btn-verde" target="_blank" rel="noopener" href="${esc(link)}">Abrir a sala em outra aba</a></div>`; }
   }
