@@ -226,8 +226,10 @@ function desenharInicio(){
         <a class="btn btn-principal" href="#/aula/${a.id}">Ler a aula e fazer a atividade →</a></div>`).join('')}</section>`
     : `<div class="tudo-certo">✅ Você está em dia! Nenhuma atividade pendente agora.</div>`;
   tela(`<div class="linha entre"><h1>Olá, ${esc(primeiroNome)}!</h1>${botoesFonte()}</div>
+    <div class="inicio-grid"><aside class="pilha lateral">
     ${sala ? cartaoAoVivo(sala) : ''}
     ${proximo}
+    <div class="so-pc">${ajudaAluno(false)}</div></aside>
     <section class="pilha" aria-label="Minhas aulas por módulo">
       ${ab.html}
       <div class="cab-mod"><h2>${esc(nomeModulo(ab.sel))}</h2>
@@ -239,8 +241,8 @@ function desenharInicio(){
         <div class="num"><b>${feitas}</b><span>Entregues</span></div>
       </div>
       <div class="aulas grade">${lista.map(itemAula).join('')}</div>
-    </section>
-    ${ajudaAluno(false)}`, 'aulas');
+    </section></div>
+    <div class="so-cel">${ajudaAluno(false)}</div>`, 'aulas');
   ligarFonte(); ligarAbas('escola_mod_aluno', desenharInicio);
 }
 function itemAula(a){
@@ -273,13 +275,13 @@ async function telaAula(id){
       <div class="envio-fixo" id="barraEnvio"><span class="cont" id="contagem">0 de ${qs.length} respondidas</span><button type="button" class="btn btn-principal" id="enviar">Enviar respostas</button></div></form>`;
   else atividade = `<div class="cartao"><h2>Prazo encerrado</h2><p>O prazo desta atividade terminou em ${esc(dataHora(a.prazo))}. Se precisar, fale com o seu professor.</p></div>`;
   const [cls, txt] = status(a);
-  tela(`<a class="btn btn-linha btn-peq voltar" href="#/${ehProf ? 'aulas' : ''}">← Voltar às aulas</a>
+  tela(`<div class="leitura"><a class="btn btn-linha btn-peq voltar" href="#/${ehProf ? 'aulas' : ''}">← Voltar às aulas</a>
     <div class="pilha" style="gap:8px"><span class="trilha">${esc(rotAula(a))}</span><h1>${esc(a.titulo)}</h1>${ehProf ? '' : `<span class="chip ${cls}">${txt}</span>`}</div>
     ${ehProf ? '' : `<nav class="etapas" aria-label="Passos da lição"><a class="etapa" href="#conteudo"><i>1</i>Ler a aula</a><a class="etapa ${ent ? 'ok' : ''}" href="#atividade"><i>${ent ? '✓' : '2'}</i>${ent ? 'Ver meu resultado' : 'Fazer a atividade'}</a></nav>`}
     <div class="ferramentas"><button class="btn btn-ouro btn-peq" id="ouvir">🔊 Ouvir a aula</button><button class="btn btn-linha btn-peq" data-fs="-1" aria-label="Diminuir letra">A−</button><button class="btn btn-linha btn-peq" data-fs="1" aria-label="Aumentar letra">A+</button></div>
     ${a.versiculo ? `<blockquote class="versiculo"><p>“${esc(a.versiculo)}”</p><cite>${esc(a.versiculo_ref)}</cite></blockquote>` : ''}
     <section class="pilha" id="conteudo">${conteudo}</section>
-    <section class="pilha" id="atividade"><h2>Exercício de fixação</h2>${atividade}</section>`, 'aulas');
+    <section class="pilha" id="atividade"><h2>Exercício de fixação</h2>${atividade}</section></div>`, 'aulas');
   app.querySelectorAll('.etapa').forEach(l => l.addEventListener('click', ev => { ev.preventDefault(); document.querySelector(l.getAttribute('href')).scrollIntoView({behavior:'smooth'}); }));
   ligarFonte();
   const bOuvir = document.getElementById('ouvir');
@@ -426,12 +428,13 @@ async function telaSala(){
   const voltar = ehP ? '#/aovivo' : '#/';
   tela(`<div class="linha entre"><span class="selo-vivo">AO VIVO</span><button class="btn btn-perigo btn-peq" id="sairSala">Sair da aula</button></div>
     <div class="pilha" style="gap:4px"><h1>${esc(sala.titulo)}</h1>${sala.aula ? `<p class="sub">${esc(rotAula(sala.aula))}: ${esc(sala.aula.titulo)}</p>` : ''}</div>
+    <div class="${ehP ? 'sala-grid' : 'pilha'}"><div class="pilha">
     ${ehDaily(link) ? `<div class="video-caixa" id="video"><p class="carregando" style="color:#fff">Abrindo o vídeo…</p></div>`
       : link ? `<div class="cartao destaque"><h2>Abrir a sala de vídeo</h2><p>A aula acontece em outra página. Toque no botão abaixo${ehJitsi(link) ? ' (seu nome já vai preenchido)' : ''} e <b>deixe esta página do site aberta</b> para a sua presença ser registrada.</p>
           <a class="btn btn-verde btn-bloco" target="_blank" rel="noopener" href="${esc(linkComNome(link, sessao.nome))}">🎥 Abrir a sala de vídeo</a></div>`
       : `<div class="cartao"><p>O professor ainda não colocou o link do vídeo. Sua presença já está sendo registrada.</p></div>`}
-    <p class="tudo-certo">✅ Você entrou como <b>${esc(sessao.nome)}</b>. Sua presença está sendo registrada enquanto esta página estiver aberta.</p>
-    ${ehP ? `<section class="cartao"><div class="linha entre"><h2>Quem está na aula</h2><a class="btn btn-linha btn-peq" href="#/aovivo">Painel da aula</a></div><div id="listaVivo" class="pessoas"><p class="sub">Carregando…</p></div></section>` : ''}`, 'vivo');
+    <p class="tudo-certo">✅ Você entrou como <b>${esc(sessao.nome)}</b>. Sua presença está sendo registrada enquanto esta página estiver aberta.</p></div>
+    ${ehP ? `<section class="cartao lista-lateral"><div class="linha entre"><h2>Quem está na aula</h2><a class="btn btn-linha btn-peq" href="#/aovivo">Painel da aula</a></div><div id="listaVivo" class="pessoas"><p class="sub">Carregando…</p></div></section>` : ''}</div>`, 'vivo');
   salaAtual = { id: sala.id, seg: r.segmento };
   const s = salaAtual;
   const terminar = msg => { if (salaAtual !== s) return; sairDaSala(); aviso(msg); location.hash = voltar; };
@@ -479,7 +482,7 @@ function profAulas(){
   const hoje = isoDataSP();
   tela(cabProf('Aulas') + avisoAoVivoProf() + ab.html + `<h2>${esc(nomeModulo(ab.sel))}</h2>
     <p class="sub peq">Ao liberar, os alunos podem ler a aula e fazer a atividade. O prazo padrão é de 3 dias, até as 23:59 do último dia. Você pode mudar a data.</p>
-    <div class="pilha">${ab.lista.map(a => { const lib = !!a.liberada_em; const aberta = lib && new Date(a.prazo) > Date.now();
+    <div class="grade-prof">${ab.lista.map(a => { const lib = !!a.liberada_em; const aberta = lib && new Date(a.prazo) > Date.now();
     return `<div class="cartao"><div class="linha entre"><h3>${a.numero}. ${esc(a.titulo)}</h3>
       <span class="chip ${!lib ? 'chip-bloqueada' : aberta ? 'chip-aberta' : 'chip-expirada'}">${!lib ? 'Bloqueada' : aberta ? 'Aberta' : 'Prazo encerrado'}</span></div>
       ${lib ? `<p>Prazo: <b>${esc(dataHora(a.prazo))}</b> (${falta(a.prazo)})</p>` : ''}
@@ -549,10 +552,10 @@ function profPresenca(){
   const marcados = al.filter(u => (u.presencas || {})[sel] != null).length;
   tela(cabProf('Presença') + ab.html + `<label class="campo" for="pAula">Lição<select id="pAula">${libs.map(a => `<option value="${a.id}" ${a.id===sel?'selected':''}>${a.numero}. ${esc(a.titulo)}</option>`).join('')}</select></label>
     <p class="sub peq">Toque em “Presente” ou “Faltou” para cada aluno; salva na hora (${marcados} de ${al.length} marcados). Se a aula foi pelo <b>Ao vivo</b>, dá para lançar a presença de todos de uma vez no painel da aula ao vivo.</p>
-    ${al.length ? al.map(u => { const p = (u.presencas || {})[sel];
+    <div class="grade-prof">${al.length ? al.map(u => { const p = (u.presencas || {})[sel];
       return `<div class="cartao"><div class="linha entre"><h3>${esc(u.nome)}</h3><div class="pres-bot" data-al="${u.id}">
         <button class="btn btn-linha btn-peq ${p===true?'ativo-p':''}" data-v="1" aria-pressed="${p===true}">Presente</button>
-        <button class="btn btn-linha btn-peq ${p===false?'ativo-f':''}" data-v="0" aria-pressed="${p===false}">Faltou</button></div></div></div>`; }).join('') : '<p>Nenhum aluno cadastrado ainda.</p>'}`, 'presenca');
+        <button class="btn btn-linha btn-peq ${p===false?'ativo-f':''}" data-v="0" aria-pressed="${p===false}">Faltou</button></div></div></div>`; }).join('') : '<p>Nenhum aluno cadastrado ainda.</p>'}</div>`, 'presenca');
   ligarAbas('escola_mod_prof', profPresenca);
   document.getElementById('pAula').addEventListener('change', e => { store.set('escola_pres_aula', e.target.value); profPresenca(); });
   app.querySelectorAll('.pres-bot button').forEach(b => b.addEventListener('click', async () => {
@@ -613,25 +616,25 @@ async function telaProfAoVivo(salaId){
   let corpo;
   if (aberta) {
     const a = aulaDe(s.aula_id);
-    corpo = `<section class="vivo"><span class="selo-vivo">AO VIVO DESDE ${hora(s.aberta_em)}</span><h2>${esc(s.titulo)}</h2>${a ? `<p class="peq">${esc(a.titulo)}</p>` : ''}
+    corpo = `<div class="duas-col"><div class="pilha"><section class="vivo"><span class="selo-vivo">AO VIVO DESDE ${hora(s.aberta_em)}</span><h2>${esc(s.titulo)}</h2>${a ? `<p class="peq">${esc(a.titulo)}</p>` : ''}
         <a class="btn btn-ouro" href="#/aovivo/entrar">🎥 Entrar na sala (câmera, microfone e tela)</a>
         <div class="linha"><a class="btn btn-verde btn-peq" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(convidarAoVivo())}">Avisar a turma no WhatsApp</a><button class="btn btn-linha btn-peq" id="copConv">Copiar aviso</button></div></section>
-      <section class="cartao"><div class="linha entre"><h2>Quem está na aula</h2><span class="sub peq">atualiza sozinho</span></div><div id="listaVivo" class="pessoas">${listaPessoas(rel.participantes)}</div></section>
       <section class="cartao"><h2>Terminou a aula?</h2><p class="sub">Ao encerrar, a sala fecha para todos e você lança a presença de quem participou.</p>
-        <button class="btn btn-vermelho" id="encerrar">Encerrar aula ao vivo</button></section>`;
+        <button class="btn btn-vermelho" id="encerrar">Encerrar aula ao vivo</button></section></div>
+      <section class="cartao"><div class="linha entre"><h2>Quem está na aula</h2><span class="sub peq">atualiza sozinho</span></div><div id="listaVivo" class="pessoas">${listaPessoas(rel.participantes)}</div></section></div>`;
   } else if (s && salaId) {
     const a = aulaDe(s.aula_id);
     corpo = `<a class="btn btn-linha btn-peq voltar" href="#/aovivo">← Voltar</a>
-      <section class="cartao destaque"><span class="trilha">${a ? esc(rotAula(a)) : 'Aula ao vivo'}</span><h2>${esc(s.titulo)}</h2><p class="sub">${dataCurta(s.aberta_em)}, das ${hora(s.aberta_em)} às ${hora(s.encerrada_em)}</p>
+      <div class="duas-col"><section class="cartao destaque"><span class="trilha">${a ? esc(rotAula(a)) : 'Aula ao vivo'}</span><h2>${esc(s.titulo)}</h2><p class="sub">${dataCurta(s.aberta_em)}, das ${hora(s.aberta_em)} às ${hora(s.encerrada_em)}</p>
       ${a ? `<h3>Lançar presença</h3>
         <label class="campo" for="minMin">Dar presença para quem ficou pelo menos (minutos)<input type="number" id="minMin" min="0" max="300" value="30" inputmode="numeric" style="max-width:160px"></label>
         <label class="check"><input type="checkbox" id="marcarFaltas"><span>Marcar <b>falta</b> para os alunos que não entraram na aula</span></label>
         <button class="btn btn-verde" id="aplicar">Lançar presença na ${esc(rotAula(a))}</button>
         <p class="sub peq">Depois você ainda pode ajustar aluno por aluno na aba Presença.</p>` : '<p class="sub">Esta aula ao vivo não foi ligada a nenhuma lição; marque a presença na aba Presença.</p>'}</section>
-      <section class="cartao"><h2>Quem participou</h2><div class="pessoas">${listaPessoas(rel.participantes)}</div></section>`;
+      <section class="cartao"><h2>Quem participou</h2><div class="pessoas">${listaPessoas(rel.participantes)}</div></section></div>`;
   } else {
     const sugestao = (painel.aulas.filter(a => a.liberada_em).pop() || painel.aulas[0] || {}).id;
-    corpo = `<form class="cartao destaque" id="fAbrir"><h2>Começar uma aula ao vivo</h2>
+    corpo = `<div class="duas-col"><form class="cartao destaque" id="fAbrir"><h2>Começar uma aula ao vivo</h2>
         <p class="sub">Os alunos veem o aviso “Ao vivo” no site, entram com o nome deles e você vê quem entrou, a que horas e por quanto tempo ficou.</p>
         <label class="campo" for="vAula">De qual lição é esta aula?<select id="vAula">${porModulo(painel.aulas).map(([m, lista]) => `<optgroup label="${esc(nomeModulo(m))}">${lista.map(a => `<option value="${a.id}" ${a.id===sugestao?'selected':''}>${a.numero}. ${esc(a.titulo)}</option>`).join('')}</optgroup>`).join('')}</select></label>
         <label class="campo" for="vLink">Link da sala de vídeo<input type="url" id="vLink" placeholder="https://suaigreja.daily.co/escola" value="${esc(store.get('escola_link_sala') || '')}" autocomplete="off" inputmode="url"><small>Cole o link da sua sala (veja abaixo como criar). Fica guardado para as próximas aulas.</small></label>
@@ -643,7 +646,7 @@ async function telaProfAoVivo(salaId){
           <li>Copie o link da sala (parecido com <b>https://suaigreja.daily.co/escola</b>) e cole no campo acima.</li></ol>
           <p class="peq" style="margin-top:8px">Câmera, microfone, chat e compartilhamento de tela abrem dentro do site, com o nome de cada aluno já preenchido. O plano grátis dá 10.000 minutos por mês (uma aula de 1h30 com 30 pessoas usa 2.700).</p></div>
         <div class="ajuda"><b>Também dá para usar Google Meet, Zoom ou Jitsi:</b> cole o link da reunião. O vídeo abre em outra aba e a presença continua sendo registrada enquanto o aluno deixa a página do site aberta.</div>
-      </details>`;
+      </details></div>`;
   }
   tela(cabProf('Aula ao vivo') + corpo + histHTML, 'vivo');
   if (aberta) timers.push(setInterval(async () => {
