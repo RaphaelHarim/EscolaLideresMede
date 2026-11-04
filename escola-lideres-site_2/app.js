@@ -387,6 +387,7 @@ function respostaHTML(q, i, ent, ehProf){
 const convidarAoVivo = () => `🔴 A aula da Escola de Líderes está AO VIVO agora!\nEntre no site, faça o login e toque em "Ao vivo":\n${siteUrl()}#/aovivo/entrar`;
 const ehDaily = l => /^https:\/\/[a-z0-9-]+\.daily\.co\/[^\s]+$/i.test(l || '');
 const ehJitsi = l => /^https:\/\/(meet\.jit\.si|8x8\.vc|[^/]*jitsi[^/]*)\//i.test(l || '');
+function idYoutube(l){ const m = String(l || '').match(/^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|live\/|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i); return m ? m[1] : null; }
 const linkComNome = (l, nome) => ehJitsi(l) ? `${l.split('#')[0]}#userInfo.displayName=${encodeURIComponent(JSON.stringify(nome))}` : l;
 
 async function telaAlunoAoVivo(){
@@ -429,7 +430,9 @@ async function telaSala(){
   tela(`<div class="linha entre"><span class="selo-vivo">AO VIVO</span><button class="btn btn-perigo btn-peq" id="sairSala">Sair da aula</button></div>
     <div class="pilha" style="gap:4px"><h1>${esc(sala.titulo)}</h1>${sala.aula ? `<p class="sub">${esc(rotAula(sala.aula))}: ${esc(sala.aula.titulo)}</p>` : ''}</div>
     <div class="${ehP ? 'sala-grid' : 'pilha'}"><div class="pilha">
-    ${ehDaily(link) ? `<div class="video-caixa" id="video"><p class="carregando" style="color:#fff">Abrindo o vídeo…</p></div>`
+    ${idYoutube(link) ? `<div class="video-caixa yt"><iframe src="https://www.youtube-nocookie.com/embed/${idYoutube(link)}?autoplay=1&rel=0" title="Aula ao vivo" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="width:100%;height:100%;border:0"></iframe></div>
+        <p class="sub peq">Não apareceu o vídeo? <a target="_blank" rel="noopener" href="${esc(link)}">Abrir a live no YouTube</a> e deixe esta página aberta para a presença contar.</p>`
+      : ehDaily(link) ? `<div class="video-caixa" id="video"><p class="carregando" style="color:#fff">Abrindo o vídeo…</p></div>`
       : link ? `<div class="cartao destaque"><h2>Abrir a sala de vídeo</h2><p>A aula acontece em outra página. Toque no botão abaixo${ehJitsi(link) ? ' (seu nome já vai preenchido)' : ''} e <b>deixe esta página do site aberta</b> para a sua presença ser registrada.</p>
           <a class="btn btn-verde btn-bloco" target="_blank" rel="noopener" href="${esc(linkComNome(link, sessao.nome))}">🎥 Abrir a sala de vídeo</a></div>`
       : `<div class="cartao"><p>O professor ainda não colocou o link do vídeo. Sua presença já está sendo registrada.</p></div>`}
@@ -647,10 +650,11 @@ async function telaProfAoVivo(salaId){
     corpo = `<div class="duas-col"><form class="cartao destaque" id="fAbrir"><h2>Começar uma aula ao vivo</h2>
         <p class="sub">Os alunos veem o aviso “Ao vivo” no site, entram com o nome deles e você vê quem entrou, a que horas e por quanto tempo ficou.</p>
         <label class="campo" for="vAula">De qual lição é esta aula?<select id="vAula">${porModulo(painel.aulas).map(([m, lista]) => `<optgroup label="${esc(nomeModulo(m))}">${lista.map(a => `<option value="${a.id}" ${a.id===sugestao?'selected':''}>${a.numero}. ${esc(a.titulo)}</option>`).join('')}</optgroup>`).join('')}</select></label>
-        <label class="campo" for="vLink">Link da sala de vídeo<input type="url" id="vLink" placeholder="https://suaigreja.daily.co/escola" value="${esc(store.get('escola_link_sala') || '')}" autocomplete="off" inputmode="url"><small>Cole o link da sua sala (veja abaixo como criar). Fica guardado para as próximas aulas.</small></label>
+        <label class="campo" for="vLink">Link da sala de vídeo<input type="url" id="vLink" placeholder="Link da live do YouTube (ou da sala de vídeo)" value="${esc(store.get('escola_link_sala') || '')}" autocomplete="off" inputmode="url"><small>Cole o link da live do YouTube (pode ser não listada). O vídeo aparece dentro do site e a presença é contada enquanto o aluno assiste.</small></label>
         <button class="btn btn-verde" type="submit">🔴 Abrir a sala ao vivo</button></form>
-      <details class="cartao ajuda-geral" ${store.get('escola_link_sala') ? '' : 'open'}><summary>Como criar a sala de vídeo (só uma vez)</summary>
-        <div class="ajuda"><b>Recomendado: Daily — grátis e abre dentro do site</b><ol>
+      <details class="cartao ajuda-geral"><summary>Que link posso colocar?</summary>
+        <div class="ajuda"><b>Live do YouTube:</b> crie a live (pode ser <b>não listada</b>), copie o link (ex.: https://youtube.com/live/…) e cole aqui. Os alunos assistem dentro do site e você vê quem entrou e por quanto tempo. Deixe ligada a opção “Permitir incorporação” da live.</div>
+        <div class="ajuda"><b>Daily</b> (vídeo com câmera e microfone de todos) — grátis e abre dentro do site</b><ol>
           <li>Entre em <b>dashboard.daily.co</b> e crie uma conta gratuita.</li>
           <li>Vá em <b>Rooms</b> e toque em <b>Create room</b>. Dê um nome, por exemplo “escola”.</li>
           <li>Copie o link da sala (parecido com <b>https://suaigreja.daily.co/escola</b>) e cole no campo acima.</li></ol>

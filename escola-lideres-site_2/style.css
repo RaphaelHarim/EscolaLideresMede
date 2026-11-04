@@ -263,3 +263,4 @@ a.vivo{color:var(--branco)}
   .aulas.grade{grid-template-columns:repeat(3,1fr)}
 }
 main:focus,main:focus-visible{outline:none}
+.video-caixa.yt{height:auto; min-height:0; aspect-ratio:16/9}
