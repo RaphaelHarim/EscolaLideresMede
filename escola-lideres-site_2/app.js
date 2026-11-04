@@ -49,6 +49,12 @@ function mascaraCel(inp){ inp.addEventListener('input', () => { const d = inp.va
 function status(a){
   return { bloqueada:['chip-bloqueada','Em breve'], aberta:['chip-aberta','Atividade aberta'], entregue:['chip-entregue','Atividade entregue'], expirada:['chip-expirada','Prazo encerrado'] }[a.status] || ['chip-bloqueada', a.status];
 }
+const MODULOS = { 1:'A vida cristã genuína', 2:'Visão Celular', 3:'Módulo 3' };
+const nomeModulo = m => `Módulo ${m}` + (MODULOS[m] && MODULOS[m] !== `Módulo ${m}` ? ` · ${MODULOS[m]}` : '');
+function porModulo(aulas){ const g = new Map(); aulas.forEach(a => { const m = a.modulo || 1; if (!g.has(m)) g.set(m, []); g.get(m).push(a); });
+  return [...g.entries()].sort((x,y) => x[0]-y[0]); }
+const rotAula = a => `M${a.modulo || 1} · Aula ${a.numero}`;
+function moduloAtual(aulas){ const lib = aulas.filter(a => a.liberada_em || (a.status && a.status !== 'bloqueada')); return lib.length ? Math.max(...lib.map(a => a.modulo || 1)) : Math.min(...aulas.map(a => a.modulo || 1)); }
 function tamanhoFonte(delta){ const atual = parseInt(store.get('escola_fs') || '20', 10); const novo = Math.min(28, Math.max(17, atual + delta)); store.set('escola_fs', String(novo)); document.documentElement.style.setProperty('--fs', novo + 'px'); }
 tamanhoFonte(0);
 
@@ -141,20 +147,22 @@ async function telaInicio(){
   const marcadas = aulas.filter(a => a.presente != null); const pres = marcadas.filter(a => a.presente).length;
   const abertas = aulas.filter(a => a.status === 'aberta');
   const primeiroNome = String(d.nome).split(' ')[0];
+  const atual = aulas.length ? moduloAtual(aulas) : 1;
   tela(`<div class="linha entre"><h1>Olá, ${esc(primeiroNome)}!</h1>
       <div class="ferramentas"><button class="btn btn-linha btn-peq" data-fs="-1" aria-label="Diminuir letra">A−</button><button class="btn btn-linha btn-peq" data-fs="1" aria-label="Aumentar letra">A+</button></div></div>
-    ${abertas.length ? `<div class="prazo-box">📖 Você tem ${abertas.length} atividade${abertas.length>1?'s':''} para fazer. ${abertas.map(a=>`Aula ${a.numero}: entregar até ${esc(dataHora(a.prazo))} (${falta(a.prazo)}).`).join(' ')}</div>` : ''}
+    ${abertas.length ? `<div class="prazo-box">📖 Você tem ${abertas.length} atividade${abertas.length>1?'s':''} para fazer. ${abertas.map(a=>`${rotAula(a)}: entregar até ${esc(dataHora(a.prazo))} (${falta(a.prazo)}).`).join(' ')}</div>` : ''}
     <div class="resumo">
       <div class="num"><b>${nota(media)}</b><span>Minha média</span></div>
       <div class="num"><b>${pres}/${marcadas.length}</b><span>Presenças</span></div>
       <div class="num"><b>${aulas.filter(a=>a.status==='entregue').length}</b><span>Atividades entregues</span></div>
     </div>
-    <section class="pilha"><h2>Módulo 1 · A vida cristã genuína</h2>
-    <div class="aulas">${aulas.map(a => { const [cls, txt] = status(a);
+    ${porModulo(aulas).map(([m, lista]) => { const aberto = m === atual || lista.some(a => a.status === 'aberta');
+    return `<details class="modulo" ${aberto ? 'open' : ''}><summary><h2>${esc(nomeModulo(m))}</h2><span class="sub">${lista.filter(a=>a.status==='entregue').length} de ${lista.length} atividades entregues</span></summary>
+    <div class="aulas">${lista.map(a => { const [cls, txt] = status(a);
       const extra = a.status === 'aberta' ? `Entregar até ${esc(dataHora(a.prazo))}` : a.status === 'entregue' ? `Nota ${nota(a.nota)}${a.corrigida ? '' : ' · aguardando correção do professor'}` : a.status === 'expirada' ? 'Você ainda pode ler o conteúdo' : 'O professor vai liberar em breve';
       const pchip = a.presente === true ? '<span class="chip chip-pres">Presente</span>' : a.presente === false ? '<span class="chip chip-falta">Faltou</span>' : '';
       const inner = `<span class="aula-num">${a.numero}</span><span class="aula-info"><h3>${esc(a.titulo)}</h3><span class="linha"><span class="chip ${cls}">${txt}</span>${pchip}</span><span class="sub">${extra}</span></span>`;
-      return a.status === 'bloqueada' ? `<div class="aula-item st-bloqueada">${inner}</div>` : `<a class="aula-item st-${a.status}" href="#/aula/${a.id}">${inner}</a>`; }).join('')}</div></section>
+      return a.status === 'bloqueada' ? `<div class="aula-item st-bloqueada">${inner}</div>` : `<a class="aula-item st-${a.status}" href="#/aula/${a.id}">${inner}</a>`; }).join('')}</div></details>`; }).join('')}
     <div class="linha"><a class="btn btn-linha btn-peq" href="#/pin">Trocar minha senha</a><a class="btn btn-linha btn-peq" href="#/sair">Sair</a></div>`);
   app.querySelectorAll('[data-fs]').forEach(b => b.addEventListener('click', () => tamanhoFonte(+b.dataset.fs)));
 }
@@ -294,7 +302,8 @@ const alvo = () => document.getElementById('painel');
 function profAulas(){
   const hoje = isoDataSP();
   alvo().innerHTML = `<p class="sub">Ao liberar, os alunos podem ler a aula e fazer a atividade. O prazo padrão é de 3 dias, até as 23:59 do último dia. Você pode mudar a data.</p>` +
-  painel.aulas.map(a => { const lib = !!a.liberada_em; const aberta = lib && new Date(a.prazo) > Date.now();
+  porModulo(painel.aulas).map(([m, lista]) => `<details class="modulo" ${m === moduloAtual(painel.aulas) ? 'open' : ''}><summary><h2>${esc(nomeModulo(m))}</h2><span class="sub">${lista.filter(a=>a.liberada_em).length} de ${lista.length} aulas liberadas</span></summary><div class="pilha">` +
+  lista.map(a => { const lib = !!a.liberada_em; const aberta = lib && new Date(a.prazo) > Date.now();
     return `<div class="cartao"><div class="linha entre"><h3>${a.numero}. ${esc(a.titulo)}</h3>
       <span class="chip ${!lib ? 'chip-bloqueada' : aberta ? 'chip-aberta' : 'chip-expirada'}">${!lib ? 'Bloqueada' : aberta ? 'Aberta' : 'Prazo encerrado'}</span></div>
       ${lib ? `<p>Prazo: <b>${esc(dataHora(a.prazo))}</b> (${falta(a.prazo)})</p>` : ''}
@@ -305,7 +314,7 @@ function profAulas(){
         <a class="btn btn-linha btn-peq" href="#/aula/${a.id}">Ver aula</a>
         <a class="btn btn-principal btn-peq" href="#/entregas/${a.id}">Entregas</a>
         ${lib ? `<button class="btn btn-perigo btn-peq" data-bloq="${a.id}">Bloquear de novo</button>` : ''}
-      </div></div>`; }).join('');
+      </div></div>`; }).join('') + '</div></details>').join('');
   alvo().querySelectorAll('[data-lib]').forEach(b => b.addEventListener('click', async () => { b.disabled = true;
     try { painel = await rpc('escola_prof_liberar', {p_token: tk(), p_aula: +b.dataset.lib, p_dias: 3}); aviso('Aula liberada para os alunos.'); profAulas(); } catch(e){ aviso(e.message, true); b.disabled = false; } }));
   alvo().querySelectorAll('[data-prazo]').forEach(inp => inp.addEventListener('change', async () => { if (!inp.value) return;
@@ -359,9 +368,10 @@ function profAlunos(){
 function painelUsuarioId(){ return painel.eu; }
 
 function profPresenca(){
-  const libs = painel.aulas; const sel = +(store.get('escola_pres_aula') || (libs.find(a => a.liberada_em) || libs[0]).id);
+  const libs = painel.aulas; const salva = +store.get('escola_pres_aula'); const ultimaLib = libs.filter(a => a.liberada_em).pop();
+  const sel = libs.some(a => a.id === salva) ? salva : (ultimaLib || libs[0]).id;
   const al = alunos().filter(u => u.ativo);
-  alvo().innerHTML = `<label class="campo" for="pAula">Aula<select id="pAula">${libs.map(a => `<option value="${a.id}" ${a.id===sel?'selected':''}>${a.numero}. ${esc(a.titulo)}</option>`).join('')}</select></label>
+  alvo().innerHTML = `<label class="campo" for="pAula">Aula<select id="pAula">${porModulo(libs).map(([m, lista]) => `<optgroup label="${esc(nomeModulo(m))}">${lista.map(a => `<option value="${a.id}" ${a.id===sel?'selected':''}>${a.numero}. ${esc(a.titulo)}</option>`).join('')}</optgroup>`).join('')}</select></label>
     <p class="sub">Toque em “Presente” ou “Faltou” para cada aluno. Salva na hora.</p>
     ${al.length ? al.map(u => { const p = (u.presencas || {})[sel];
       return `<div class="cartao"><div class="linha entre"><h3>${esc(u.nome)}</h3><div class="pres-bot" data-al="${u.id}">
@@ -378,14 +388,18 @@ function profPresenca(){
 }
 
 function profNotas(){
-  const al = alunos(); const aulas = painel.aulas;
-  const linhas = al.map(u => { const ns = Object.values(u.notas || {}).map(n => +n.nota); const media = ns.length ? ns.reduce((a,b)=>a+b,0)/ns.length : null;
-    const pres = Object.values(u.presencas || {}); const p = pres.filter(Boolean).length;
+  const al = alunos(); const mods = porModulo(painel.aulas).map(x => x[0]);
+  const salvo = +store.get('escola_notas_mod'); const mod = mods.includes(salvo) ? salvo : moduloAtual(painel.aulas);
+  const aulas = painel.aulas.filter(a => (a.modulo || 1) === mod); const ids = new Set(aulas.map(a => String(a.id)));
+  const linhas = al.map(u => { const ns = Object.entries(u.notas || {}).filter(([k]) => ids.has(k)).map(([,n]) => +n.nota); const media = ns.length ? ns.reduce((a,b)=>a+b,0)/ns.length : null;
+    const pres = Object.entries(u.presencas || {}).filter(([k]) => ids.has(k)).map(([,v]) => v); const p = pres.filter(Boolean).length;
     return `<tr><td>${esc(u.nome)}</td>${aulas.map(a => { const n = (u.notas || {})[a.id]; const pr = (u.presencas || {})[a.id];
       return `<td class="n">${n ? nota(n.nota) + (n.corrigida ? '' : '*') : '–'}${pr === true ? ' ✓' : pr === false ? ' ✗' : ''}</td>`; }).join('')}
       <td class="n"><b>${nota(media)}</b></td><td class="n">${p}/${pres.length}</td></tr>`; }).join('');
-  alvo().innerHTML = `<p class="sub">Nota de cada aula (0 a 10). * = ainda falta corrigir questão de escrever. ✓ presente · ✗ faltou.</p>
-    <div class="tabela-wrap"><table><thead><tr><th>Aluno</th>${aulas.map(a => `<th class="n">Aula ${a.numero}</th>`).join('')}<th class="n">Média</th><th class="n">Presença</th></tr></thead><tbody>${linhas || `<tr><td colspan="${aulas.length+3}">Nenhum aluno ainda.</td></tr>`}</tbody></table></div>`;
+  alvo().innerHTML = `<label class="campo" for="nMod">Módulo<select id="nMod">${mods.map(m => `<option value="${m}" ${m===mod?'selected':''}>${esc(nomeModulo(m))}</option>`).join('')}</select></label>
+    <p class="sub">Nota de cada aula (0 a 10). * = ainda falta corrigir questão de escrever. ✓ presente · ✗ faltou.</p>
+    <div class="tabela-wrap"><table><thead><tr><th>Aluno</th>${aulas.map(a => `<th class="n">Aula ${a.numero}</th>`).join('')}<th class="n">Média do módulo</th><th class="n">Presença</th></tr></thead><tbody>${linhas || `<tr><td colspan="${aulas.length+3}">Nenhum aluno ainda.</td></tr>`}</tbody></table></div>`;
+  document.getElementById('nMod').addEventListener('change', e => { store.set('escola_notas_mod', e.target.value); profNotas(); });
 }
 
 async function telaEntregas(id){
@@ -393,7 +407,7 @@ async function telaEntregas(id){
   const d = await rpc('escola_prof_entregas', {p_token: tk(), p_aula: id});
   const qs = d.questoes, abertas = qs.filter(q => q.tipo === 'aberta');
   tela(`<a class="btn btn-linha btn-peq voltar" href="#/aulas">← Voltar às aulas</a>
-    <h1>Entregas · Aula ${d.aula.numero}</h1><p class="sub">${esc(d.aula.titulo)}${d.aula.prazo ? ` · prazo ${esc(dataHora(d.aula.prazo))}` : ''}</p>
+    <h1>Entregas · ${d.aula.modulo ? `Módulo ${d.aula.modulo} · ` : ''}Aula ${d.aula.numero}</h1><p class="sub">${esc(d.aula.titulo)}${d.aula.prazo ? ` · prazo ${esc(dataHora(d.aula.prazo))}` : ''}</p>
     ${d.entregas.length ? '' : '<div class="cartao"><p>Nenhum aluno entregou ainda.</p></div>'}
     ${d.entregas.map(e => `<details class="cartao" ${e.corrigida ? '' : 'open'}><summary class="linha entre" style="cursor:pointer"><h3>${esc(e.aluno)}</h3>
         <span class="linha"><span class="chip ${e.corrigida ? 'chip-entregue' : 'chip-aberta'}">${e.corrigida ? 'Corrigida' : 'Para corrigir'}</span><b>Nota ${nota(e.nota)}</b></span></summary>

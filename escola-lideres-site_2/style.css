@@ -153,3 +153,12 @@ td.n{text-align:center; font-variant-numeric:tabular-nums; white-space:nowrap}
 .rodape{text-align:center; font-size:.8rem; color:var(--suave)}
 @media (max-width:480px){ :root{--fs:19px} h1{font-size:1.4rem} .logo-escola{width:54px} .marca-txt small{display:none} .lacunas input{width:150px} }
 @media (prefers-reduced-motion:no-preference){ .aviso{animation:sobe .2s ease-out} @keyframes sobe{from{opacity:0; transform:translate(-50%,8px)} to{opacity:1; transform:translate(-50%,0)}} }
+
+/* Módulos (seções recolhíveis) */
+.modulo{display:flex; flex-direction:column; gap:12px}
+.modulo > summary{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 12px; cursor:pointer; list-style:none; padding:12px 16px; background:var(--marrom); border-radius:14px; margin-bottom:12px}
+.modulo > summary::-webkit-details-marker{display:none}
+.modulo > summary h2{color:var(--branco); font-size:1.1rem}
+.modulo > summary h2::before{content:'▸ '; color:var(--dourado)}
+.modulo[open] > summary h2::before{content:'▾ '}
+.modulo > summary .sub{color:var(--dourado-cl); font-size:.85rem}
