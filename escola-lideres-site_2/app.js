@@ -635,16 +635,27 @@ function profPresenca(){
     } catch(e){ aviso(e.message, true); } }));
 }
 
+// Situação de um aluno no módulo: concluiu (entregou todas as lições), fazendo (algumas) ou não começou
+const GRUPOS = [['concluiu','✅ Concluíram o módulo'],['fazendo','📘 Ainda fazendo'],['nada','⏳ Ainda não começaram']];
+function situacao(u, aulas){ const feitas = aulas.filter(a => (u.notas || {})[a.id]).length;
+  return feitas === 0 ? 'nada' : feitas >= aulas.length ? 'concluiu' : 'fazendo'; }
+function agrupar(lista, aulas){ const g = {concluiu:[], fazendo:[], nada:[]};
+  [...lista].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR')).forEach(u => g[situacao(u, aulas)].push(u)); return g; }
+
 function profNotas(){
   const ab = abasModulo(painel.aulas, 'escola_mod_prof', l => `${l.length} lições`);
   const aulas = ab.lista; const ids = new Set(aulas.map(a => String(a.id)));
   const ft = filtroTurma(ab.sel, turmaDoModulo(ab.sel, aulas));
-  const linhas = ft.lista.map(u => { const ns = Object.entries(u.notas || {}).filter(([k]) => ids.has(k)).map(([,n]) => +n.nota);
+  const grupos = agrupar(ft.lista, aulas);
+  const linha = u => { const ns = Object.entries(u.notas || {}).filter(([k]) => ids.has(k)).map(([,n]) => +n.nota);
     const pres = Object.entries(u.presencas || {}).filter(([k]) => ids.has(k)).map(([,v]) => v); const p = pres.filter(Boolean).length;
     return `<tr><td>${esc(u.nome)}${seloTurma(u, ab.sel)}</td>${aulas.map(a => { const n = (u.notas || {})[a.id]; const pr = (u.presencas || {})[a.id];
       return `<td class="n">${n ? nota(n.nota) + (n.corrigida ? '' : '*') : '–'}${pr === true ? ' ✓' : pr === false ? ' ✗' : ''}</td>`; }).join('')}
-      <td class="n"><b>${nota(media(ns))}</b></td><td class="n">${p}/${pres.length}</td></tr>`; }).join('');
-  tela(cabProf('Notas') + ab.html + `<h2>${esc(nomeModulo(ab.sel))}</h2>${ft.html}
+      <td class="n"><b>${nota(media(ns))}</b></td><td class="n">${p}/${pres.length}</td></tr>`; };
+  const linhas = GRUPOS.map(([k, titulo]) => grupos[k].length ? `<tr class="grupo"><td colspan="${aulas.length+3}">${titulo} (${grupos[k].length})</td></tr>` + grupos[k].map(linha).join('') : '').join('');
+  const resumoGrupos = `<div class="resumo">${GRUPOS.map(([k, t]) => `<div class="num"><b>${grupos[k].length}</b><span>${t.replace(/^\S+ /, '')}</span></div>`).join('')}</div>`;
+  tela(cabProf('Notas') + ab.html + `<h2>${esc(nomeModulo(ab.sel))}</h2>${ft.html}${resumoGrupos}
+    <p class="sub peq">“Concluíram” = entregaram as atividades de todas as ${aulas.length} lições do módulo.</p>
     <div class="cartao destaque"><h3>Boletim para enviar ou imprimir</h3><p class="sub peq">Gera uma lista com o nome e as notas de cada aluno, em texto simples. Dá para mandar como mensagem no WhatsApp (não precisa abrir link nem arquivo) ou imprimir no papel.</p>
       <label class="campo peq">O que incluir<select id="bolEscopo" style="min-height:44px"><option value="mod">Só o Módulo ${ab.sel} (turma deste módulo)</option><option value="todos">Todos os módulos, separados por turma</option></select></label>
       <div class="linha"><button class="btn btn-verde btn-peq" id="bolZap">Enviar pelo WhatsApp</button><button class="btn btn-linha btn-peq" id="bolCopiar">Copiar texto</button><button class="btn btn-linha btn-peq" id="bolImprimir">Imprimir</button></div></div>
@@ -667,13 +678,15 @@ function boletimTexto(soModulo){
     const tm = turmaDoModulo(m, aulas); const lista = [...tm.daTurma, ...tm.outros];
     t += `\n━━━━━━━━━━━━━━━\n${nomeModulo(m).toUpperCase()}\n${libs.length} de ${aulas.length} lições liberadas\n━━━━━━━━━━━━━━━\n`;
     if (!lista.length) { t += 'Nenhum aluno nesta turma.\n'; return; }
-    lista.sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR')).forEach((u, i) => {
+    const g = agrupar(lista, aulas);
+    GRUPOS.forEach(([k, titulo]) => { if (!g[k].length) return; t += `\n${titulo.toUpperCase()} (${g[k].length})\n`;
+    g[k].forEach((u, i) => {
       const ns = Object.entries(u.notas || {}).filter(([k]) => ids.has(k));
       const pres = Object.entries(u.presencas || {}).filter(([k]) => ids.has(k)).map(([,v]) => v);
       const mediaTxt = ns.length ? nota(media(ns.map(([,n]) => +n.nota))) : '–';
       const porLicao = aulas.filter(a => (u.notas || {})[a.id]).map(a => `L${a.numero}: ${nota(u.notas[a.id].nota)}`).join(' | ');
       t += `\n${i+1}. ${u.nome}${u.modulo !== m ? ` (${nomeTurma(u.modulo)})` : ''}\n   Média: ${mediaTxt} · Atividades: ${ns.length} de ${libs.length}${pres.length ? ` · Presença: ${pres.filter(Boolean).length}/${pres.length}` : ''}\n${porLicao ? `   ${porLicao}\n` : ''}`;
-    });
+    }); });
   });
   return t + '\n(Notas de 0 a 10. L1 = Lição 1.)';
 }

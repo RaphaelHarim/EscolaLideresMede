@@ -273,3 +273,4 @@ main:focus,main:focus-visible{outline:none}
   body{background:#fff}
 }
 .chip{white-space:nowrap}
+tr.grupo td{background:var(--dourado-cl); color:var(--marrom); font-weight:900; font-size:.85rem}
