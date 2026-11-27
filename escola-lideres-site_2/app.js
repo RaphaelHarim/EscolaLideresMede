@@ -267,7 +267,11 @@ async function telaAula(id){
   const podeResponder = !ehProf && !ent && a.status === 'aberta';
   const conteudo = (a.conteudo || []).map(s => `<article class="cartao secao"><h3>${esc(s.titulo)}</h3>${s.texto ? `<p>${esc(s.texto)}</p>` : ''}${s.itens ? `<ul>${s.itens.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>` : ''}${s.ref ? `<p class="ref">${esc(s.ref)}</p>` : ''}</article>`).join('');
   let atividade = '';
-  if (ehProf) atividade = `<div class="cartao"><h2>Atividade (${qs.length} questões)</h2><p class="sub">Você está vendo como professor. Veja as respostas dos alunos em “Entregas”.</p><a class="btn btn-principal" href="#/entregas/${a.id}">Ver entregas desta aula</a></div>`;
+  let gab = null;
+  if (ehProf) { gab = (await rpc('escola_prof_entregas', {p_token: tk(), p_aula: id})).questoes;
+    atividade = `<div class="cartao"><h2>Atividade (${qs.length} questões)</h2><p class="sub">Você está vendo como professor. Veja as respostas dos alunos em “Entregas”.</p>
+      <div class="linha"><a class="btn btn-principal" href="#/entregas/${a.id}">Ver entregas desta aula</a><button class="btn btn-linha" id="impGab">Imprimir gabarito</button></div></div>
+      <h3>Gabarito (só aparece para professor)</h3>${gab.map((q,i) => `<div class="questao"><div class="q-enun"><span class="q-n">${i+1}</span><span>${esc(q.enunciado)}</span></div><div class="feedback ok">${esc(respostaCerta(q)).replace(/\n/g,'<br>')}</div></div>`).join('')}`; }
   else if (ent) atividade = resultadoHTML(qs, ent);
   else if (a.status === 'aberta') atividade = `<div class="prazo-box">⏰ ${a.prazo ? `Entregue até ${esc(dataHora(a.prazo))} (${falta(a.prazo)}).` : 'Esta atividade não tem prazo.'} Você só pode enviar uma vez. Suas respostas ficam guardadas neste aparelho até você enviar.</div>
       <form id="fAtiv" class="pilha" novalidate>${qs.map((q,i)=>questaoHTML(q,i)).join('')}
@@ -292,6 +296,18 @@ async function telaAula(id){
     const u = new SpeechSynthesisUtterance(txt); u.lang = 'pt-BR'; u.rate = 0.9; u.onend = () => bOuvir.textContent = '🔊 Ouvir a aula';
     speechSynthesis.speak(u); bOuvir.textContent = '⏹ Parar de ouvir'; });
   if (podeResponder) ligarAtividade(a, qs);
+  const bg = document.getElementById('impGab');
+  if (bg) bg.addEventListener('click', () => imprimirBoletim(`ESCOLA DE LÍDERES – MEDE\nGABARITO · ${rotAula(a)}\n${a.titulo}\n` + gab.map((q,i) => `\n${i+1}. ${q.enunciado}\n${respostaCerta(q).split('\n').map(l => '   ' + l).join('\n')}`).join('\n')));
+}
+// Resposta certa em texto, para o gabarito do professor
+function respostaCerta(q){
+  const g = q.gabarito, d = q.dados || {};
+  if (q.tipo === 'unica') { const o = (d.opcoes || []).find(o => o.id === g); return `Resposta: ${String(g).toUpperCase()}) ${o ? o.texto : ''}`; }
+  if (q.tipo === 'multipla') return 'Corretas:\n' + (d.opcoes || []).filter(o => (g || []).includes(o.id)).map(o => `${o.id.toUpperCase()}) ${o.texto}`).join('\n');
+  if (q.tipo === 'vf') return (d.itens || []).map(it => `${(g || {})[it.id]} – ${it.texto}`).join('\n');
+  if (q.tipo === 'relacionar') return (d.itens || []).map(it => { const l = (d.letras || []).find(x => x.id === (g || {})[it.id]); return `${it.texto} → ${String((g || {})[it.id]).toUpperCase()}${l ? ' (' + l.texto + ')' : ''}`; }).join('\n');
+  if (q.tipo === 'lacunas') return 'Palavras: ' + (g || []).map(x => x[0]).join(' / ');
+  return 'Questão de escrever (corrigida pelo professor). Referência: ' + ((g && g.referencia) || '—');
 }
 
 function questaoHTML(q, i){
