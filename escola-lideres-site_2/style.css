@@ -264,3 +264,12 @@ a.vivo{color:var(--branco)}
 }
 main:focus,main:focus-visible{outline:none}
 .video-caixa.yt{height:auto; min-height:0; aspect-ratio:16/9}
+
+/* Impressão do boletim: imprime só o texto do boletim */
+#impressao{display:none}
+@media print{
+  body > *:not(#impressao){display:none!important}
+  #impressao{display:block!important; font-family:'Nunito Sans',Arial,sans-serif; font-size:13pt; line-height:1.45; white-space:pre-wrap; color:#000; margin:0}
+  body{background:#fff}
+}
+.chip{white-space:nowrap}

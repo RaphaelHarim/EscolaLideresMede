@@ -69,9 +69,9 @@ function moduloAtual(aulas){
   return lib.length ? Math.max(...lib.map(a => a.modulo || 1)) : Math.min(...aulas.map(a => a.modulo || 1));
 }
 // Abas de módulo (Módulo 1 | Módulo 2 | Módulo 3)
-function abasModulo(aulas, chave, resumo){
+function abasModulo(aulas, chave, resumo, preferido){
   const mods = porModulo(aulas); const salvo = +store.get(chave);
-  const sel = mods.some(([m]) => m === salvo) ? salvo : moduloAtual(aulas);
+  const sel = mods.some(([m]) => m === salvo) ? salvo : mods.some(([m]) => m === preferido) ? preferido : moduloAtual(aulas);
   const html = `<div class="abas-mod" role="tablist" aria-label="Módulos">${mods.map(([m, lista]) =>
     `<button type="button" class="aba-mod" role="tab" aria-selected="${m===sel}" data-mod="${m}"><b>Módulo ${m}${lista.some(a => a.status === 'aberta') ? '<span class="novo">NOVO</span>' : ''}</b><span>${esc(resumo(lista))}</span></button>`).join('')}</div>`;
   return { sel, html, lista: (mods.find(([m]) => m === sel) || [0, []])[1] };
@@ -215,14 +215,14 @@ function desenharInicio(){
   const { d, sala } = inicioDados; const aulas = d.aulas || [];
   const abertas = aulas.filter(a => a.status === 'aberta').sort((a,b) => new Date(a.prazo) - new Date(b.prazo));
   const primeiroNome = String(d.nome).split(' ')[0];
-  const ab = abasModulo(aulas, 'escola_mod_aluno', l => `${l.filter(a=>a.status==='entregue').length} de ${l.length} feitas`);
+  const ab = abasModulo(aulas, 'escola_mod_aluno', l => `${l.filter(a=>a.status==='entregue').length} de ${l.length} feitas`, d.modulo);
   const lista = ab.lista;
   const ns = lista.filter(a => a.nota != null).map(a => +a.nota);
   const marcadas = lista.filter(a => a.presente != null); const pres = marcadas.filter(a => a.presente).length;
   const feitas = lista.filter(a => a.status === 'entregue').length;
   const proximo = abertas.length
     ? `<section class="passo"><h2>📖 Seu próximo passo</h2>${abertas.map(a => `<div class="tarefa"><span class="trilha">${esc(rotAula(a))}</span><b>${esc(a.titulo)}</b>
-        <span class="peq">Entregar até ${esc(dataHora(a.prazo))} · <b>${falta(a.prazo)}</b></span>
+        <span class="peq">${a.prazo ? `Entregar até ${esc(dataHora(a.prazo))} · <b>${falta(a.prazo)}</b>` : 'Sem prazo: faça quando puder'}</span>
         <a class="btn btn-principal" href="#/aula/${a.id}">Ler a aula e fazer a atividade →</a></div>`).join('')}</section>`
     : `<div class="tudo-certo">✅ Você está em dia! Nenhuma atividade pendente agora.</div>`;
   tela(`<div class="linha entre"><h1>Olá, ${esc(primeiroNome)}!</h1>${botoesFonte()}</div>
@@ -247,7 +247,7 @@ function desenharInicio(){
 }
 function itemAula(a){
   const [cls, txt] = status(a);
-  const extra = a.status === 'aberta' ? `Entregar até ${esc(dataHora(a.prazo))}` : a.status === 'entregue' ? `Nota ${nota(a.nota)}${a.corrigida ? '' : ' · aguardando correção'}` : a.status === 'expirada' ? 'Você ainda pode ler o conteúdo' : 'O professor vai liberar em breve';
+  const extra = a.status === 'aberta' ? (a.prazo ? `Entregar até ${esc(dataHora(a.prazo))}` : 'Sem prazo: faça quando puder') : a.status === 'entregue' ? `Nota ${nota(a.nota)}${a.corrigida ? '' : ' · aguardando correção'}` : a.status === 'expirada' ? 'Você ainda pode ler o conteúdo' : 'O professor vai liberar em breve';
   const pchip = a.presente === true ? '<span class="chip chip-pres">Presente</span>' : a.presente === false ? '<span class="chip chip-falta">Faltou</span>' : '';
   const inner = `<span class="aula-num" aria-hidden="true">${a.status === 'entregue' ? '✓' : a.numero}</span><span class="aula-info"><span class="sub peq">Lição ${a.numero}</span><h3>${esc(a.titulo)}</h3><span class="linha"><span class="chip ${cls}">${txt}</span>${pchip}</span><span class="sub peq">${extra}</span></span>`;
   return a.status === 'bloqueada' ? `<div class="aula-item st-bloqueada">${inner}<span></span></div>` : `<a class="aula-item st-${a.status}" href="#/aula/${a.id}">${inner}<span class="seta" aria-hidden="true">›</span></a>`;
@@ -269,7 +269,7 @@ async function telaAula(id){
   let atividade = '';
   if (ehProf) atividade = `<div class="cartao"><h2>Atividade (${qs.length} questões)</h2><p class="sub">Você está vendo como professor. Veja as respostas dos alunos em “Entregas”.</p><a class="btn btn-principal" href="#/entregas/${a.id}">Ver entregas desta aula</a></div>`;
   else if (ent) atividade = resultadoHTML(qs, ent);
-  else if (a.status === 'aberta') atividade = `<div class="prazo-box">⏰ Entregue até ${esc(dataHora(a.prazo))} (${falta(a.prazo)}). Você só pode enviar uma vez. Suas respostas ficam guardadas neste aparelho até você enviar.</div>
+  else if (a.status === 'aberta') atividade = `<div class="prazo-box">⏰ ${a.prazo ? `Entregue até ${esc(dataHora(a.prazo))} (${falta(a.prazo)}).` : 'Esta atividade não tem prazo.'} Você só pode enviar uma vez. Suas respostas ficam guardadas neste aparelho até você enviar.</div>
       <form id="fAtiv" class="pilha" novalidate>${qs.map((q,i)=>questaoHTML(q,i)).join('')}
       <div id="conf" class="confirmar" hidden><b>Tem certeza que quer enviar? Depois de enviar não dá para mudar as respostas.</b><p id="faltando" class="sub"></p><div class="linha"><button type="submit" class="btn btn-verde">Sim, enviar agora</button><button type="button" class="btn btn-linha" id="cancelar">Voltar e revisar</button></div></div>
       <div class="envio-fixo" id="barraEnvio"><span class="cont" id="contagem">0 de ${qs.length} respondidas</span><button type="button" class="btn btn-principal" id="enviar">Enviar respostas</button></div></form>`;
@@ -487,22 +487,48 @@ async function telaProfessor(aba){
   (telas[aba] || profAulas)();
 }
 const alunos = () => (painel.usuarios || []).filter(u => u.papel === 'aluno');
+const aulaAberta = a => !!a.liberada_em && (!a.prazo || new Date(a.prazo) > Date.now());
+// Alunos de um módulo: a turma do módulo + quem fez alguma atividade dele (marcado como "de outra turma")
+function turmaDoModulo(mod, aulas){
+  const ids = new Set(aulas.map(a => String(a.id)));
+  const fez = u => Object.keys(u.notas || {}).some(k => ids.has(k));
+  const todos = alunos().filter(u => u.ativo);
+  const daTurma = todos.filter(u => u.modulo === mod);
+  const outros = todos.filter(u => u.modulo !== mod && fez(u));
+  const resto = todos.filter(u => u.modulo !== mod && !fez(u));
+  return { daTurma, outros, resto };
+}
+const nomeTurma = m => m ? `Turma do Módulo ${m}` : 'Sem turma';
+function filtroTurma(mod, t){
+  const verTodos = store.get('escola_ver_todos') === '1';
+  return { verTodos, lista: verTodos ? [...t.daTurma, ...t.outros, ...t.resto] : [...t.daTurma, ...t.outros],
+    html: `<div class="linha entre cartao" style="padding:12px 16px"><span><b>${t.daTurma.length}</b> aluno${t.daTurma.length==1?'':'s'} na ${esc(nomeTurma(mod))}${t.outros.length ? ` · <b>${t.outros.length}</b> de outra turma fizeram atividades deste módulo` : ''}</span>
+      <label class="check peq" style="font-weight:700"><input type="checkbox" id="verTodos" ${verTodos ? 'checked' : ''}><span>Mostrar todos os alunos</span></label></div>` };
+}
+function ligarVerTodos(redesenhar){ const c = document.getElementById('verTodos'); if (c) c.addEventListener('change', () => { store.set('escola_ver_todos', c.checked ? '1' : null); redesenhar(); }); }
+const seloTurma = (u, mod) => u.modulo === mod ? '' : ` <span class="chip chip-bloqueada" title="${esc(nomeTurma(u.modulo))}">${u.modulo ? 'Turma M' + u.modulo : 'Sem turma'}</span>`;
 const cabProf = titulo => `<div class="linha entre"><h1>${titulo}</h1><div class="linha"><a class="btn btn-linha btn-peq" href="#/pin">Trocar senha</a><a class="btn btn-linha btn-peq" href="#/sair">Sair</a></div></div>`;
 const avisoAoVivoProf = () => aoVivoAgora ? `<a class="vivo" href="#/aovivo" style="text-decoration:none"><span class="selo-vivo">AO VIVO AGORA</span><b>Há uma aula ao vivo aberta. Toque para ver quem está na sala.</b></a>` : '';
 
 function profAulas(){
   const ab = abasModulo(painel.aulas, 'escola_mod_prof', l => `${l.filter(a=>a.liberada_em).length} de ${l.length} liberadas`);
   const hoje = isoDataSP();
+  const libs = ab.lista.filter(a => a.liberada_em); const fechadas = libs.filter(a => !aulaAberta(a)).length;
   tela(cabProf('Aulas') + avisoAoVivoProf() + ab.html + `<h2>${esc(nomeModulo(ab.sel))}</h2>
-    <p class="sub peq">Ao liberar, os alunos podem ler a aula e fazer a atividade. O prazo padrão é de 3 dias, até as 23:59 do último dia. Você pode mudar a data.</p>
-    <div class="grade-prof">${ab.lista.map(a => { const lib = !!a.liberada_em; const aberta = lib && new Date(a.prazo) > Date.now();
+    <p class="sub peq">Ao liberar, os alunos podem ler a aula e fazer a atividade. Quando o prazo passa, a atividade <b>fecha sozinha</b> para quem não entregou. Use “Sem prazo” para deixar aberta até você bloquear.</p>
+    ${libs.length ? `<div class="cartao destaque"><h3>Prazo de todas as atividades do ${esc('Módulo ' + ab.sel)}</h3>
+      <p class="sub peq">${libs.length} liberada${libs.length==1?'':'s'}${fechadas ? ` · <b style="color:var(--vermelho)">${fechadas} com prazo encerrado (fechada${fechadas==1?'':'s'})</b>` : ' · todas abertas'}</p>
+      <div class="linha" style="align-items:flex-end"><label class="campo peq">Reabrir todas até (23:59)<input type="date" id="prazoMod" min="${hoje}" style="min-height:44px"></label>
+      <button class="btn btn-verde btn-peq" id="aplicarPrazoMod">Aplicar a todas</button><button class="btn btn-linha btn-peq" id="semPrazoMod">Deixar todas sem prazo</button></div></div>` : ''}
+    <div class="grade-prof">${ab.lista.map(a => { const lib = !!a.liberada_em; const aberta = aulaAberta(a);
     return `<div class="cartao"><div class="linha entre"><h3>${a.numero}. ${esc(a.titulo)}</h3>
       <span class="chip ${!lib ? 'chip-bloqueada' : aberta ? 'chip-aberta' : 'chip-expirada'}">${!lib ? 'Bloqueada' : aberta ? 'Aberta' : 'Prazo encerrado'}</span></div>
-      ${lib ? `<p>Prazo: <b>${esc(dataHora(a.prazo))}</b> (${falta(a.prazo)})</p>` : ''}
+      ${lib ? (a.prazo ? `<p>Prazo: <b>${esc(dataHora(a.prazo))}</b> (${falta(a.prazo)})</p>` : '<p><b>Sem prazo</b>: fica aberta até você bloquear.</p>') : ''}
       <p class="sub peq">${a.questoes} questões · ${a.entregas} entrega${a.entregas==1?'':'s'}${a.pendentes ? ` · <b style="color:var(--vermelho)">${a.pendentes} para corrigir</b>` : ''}</p>
       <div class="linha">
-        ${!lib ? `<button class="btn btn-verde btn-peq" data-lib="${a.id}">Liberar aula (prazo de 3 dias)</button>` : ''}
-        <label class="campo peq">Prazo até (23:59)<input type="date" data-prazo="${a.id}" value="${lib ? isoDataSP(a.prazo) : ''}" min="${hoje}" style="min-height:44px"></label>
+        ${!lib ? `<button class="btn btn-verde btn-peq" data-lib="${a.id}">Liberar aula (prazo de 3 dias)</button><button class="btn btn-linha btn-peq" data-libsem="${a.id}">Liberar sem prazo</button>` : ''}
+        <label class="campo peq">Prazo até (23:59)<input type="date" data-prazo="${a.id}" value="${lib && a.prazo ? isoDataSP(a.prazo) : ''}" min="${hoje}" style="min-height:44px"></label>
+        ${lib && a.prazo ? `<button class="btn btn-linha btn-peq" data-semprazo="${a.id}">Sem prazo</button>` : ''}
         <a class="btn btn-linha btn-peq" href="#/aula/${a.id}">Ver aula</a>
         <a class="btn btn-principal btn-peq" href="#/entregas/${a.id}">Entregas</a>
         ${lib ? `<button class="btn btn-perigo btn-peq" data-bloq="${a.id}">Bloquear de novo</button>` : ''}
@@ -510,6 +536,12 @@ function profAulas(){
   ligarAbas('escola_mod_prof', profAulas);
   app.querySelectorAll('[data-lib]').forEach(b => b.addEventListener('click', async () => { b.disabled = true;
     try { painel = await rpc('escola_prof_liberar', {p_token: tk(), p_aula: +b.dataset.lib, p_dias: 3}); aviso('Aula liberada para os alunos.'); profAulas(); } catch(e){ aviso(e.message, true); b.disabled = false; } }));
+  const mudarPrazo = async (aula, data, msg) => { try { painel = await rpc('escola_prof_prazo', {p_token: tk(), p_aula: aula, p_data: data}); aviso(msg); profAulas(); } catch(e){ aviso(e.message, true); } };
+  app.querySelectorAll('[data-semprazo]').forEach(b => b.addEventListener('click', () => mudarPrazo(+b.dataset.semprazo, null, 'Pronto: a atividade fica aberta sem prazo.')));
+  app.querySelectorAll('[data-libsem]').forEach(b => b.addEventListener('click', () => mudarPrazo(+b.dataset.libsem, null, 'Aula liberada, sem prazo.')));
+  const prazoMod = async data => { try { painel = await rpc('escola_prof_prazo_modulo', {p_token: tk(), p_modulo: ab.sel, p_data: data}); aviso(data ? 'Todas as atividades liberadas do módulo foram reabertas.' : 'Todas as atividades do módulo ficaram sem prazo.'); profAulas(); } catch(e){ aviso(e.message, true); } };
+  const bpm = document.getElementById('aplicarPrazoMod'); if (bpm) bpm.addEventListener('click', () => { const v = document.getElementById('prazoMod').value; if (!v) return aviso('Escolha a data primeiro.', true); prazoMod(v); });
+  const bsm = document.getElementById('semPrazoMod'); if (bsm) bsm.addEventListener('click', () => prazoMod(null));
   app.querySelectorAll('[data-prazo]').forEach(inp => inp.addEventListener('change', async () => { if (!inp.value) return;
     try { painel = await rpc('escola_prof_prazo', {p_token: tk(), p_aula: +inp.dataset.prazo, p_data: inp.value}); aviso('Prazo atualizado.'); profAulas(); } catch(e){ aviso(e.message, true); } }));
   app.querySelectorAll('[data-bloq]').forEach(b => b.addEventListener('click', () => { if (b.dataset.conf) {
@@ -521,6 +553,9 @@ const convite = () => `Olá! A Escola de Líderes (MEDE) agora tem aulas e ativi
 
 function profAlunos(){
   const us = painel.usuarios || [];
+  const mods = porModulo(painel.aulas).map(([m]) => m);
+  const grupos = [['Professores', us.filter(u => u.papel === 'professor')], ...mods.map(m => [nomeTurma(m), us.filter(u => u.papel === 'aluno' && u.modulo === m)]),
+    ['Sem turma', us.filter(u => u.papel === 'aluno' && !mods.includes(u.modulo))]];
   const msg = convite();
   tela(cabProf('Alunos') + `<div class="cartao destaque"><h2>Convidar alunos</h2>
       <p>Os alunos criam a própria conta: entram no site, tocam em <b>Primeiro acesso</b>, escrevem o nome e escolhem uma senha de 4 números. Mande este convite no grupo da turma:</p>
@@ -532,9 +567,13 @@ function profAlunos(){
       <label class="campo" style="flex:0 1 160px" for="nPapel">Tipo<select id="nPapel"><option value="aluno">Aluno</option><option value="professor">Professor</option></select></label></div>
       <button class="btn btn-principal" type="submit">Cadastrar</button></form>
     <h2>Cadastrados (${us.length})</h2>
-    ${us.map(u => `<div class="cartao" data-u="${u.id}"><div class="linha entre"><div><h3>${esc(u.nome)}</h3><p class="sub">${u.papel === 'professor' ? 'Professor' : 'Aluno'}${u.tem_senha ? '' : ' · <b style="color:var(--dourado-esc)">ainda não criou a senha</b>'}${u.ativo ? '' : ' · <b style="color:var(--vermelho)">desativado</b>'}</p></div>
+    <p class="sub peq">Cada aluno pertence à turma de um módulo. As abas de Notas e Presença de cada módulo mostram só a turma dele. Mude a turma no seletor do aluno.</p>
+    ${grupos.map(([titulo, lista]) => lista.length ? `<h3 class="trilha" style="margin-top:8px">${esc(titulo)} (${lista.length})</h3><div class="grade-prof">` + lista.map(u => `<div class="cartao" data-u="${u.id}"><div class="linha entre"><div><h3>${esc(u.nome)}</h3><p class="sub">${u.papel === 'professor' ? 'Professor' : 'Aluno'}${u.tem_senha ? '' : ' · <b style="color:var(--dourado-esc)">ainda não criou a senha</b>'}${u.ativo ? '' : ' · <b style="color:var(--vermelho)">desativado</b>'}</p></div>
+      ${u.papel === 'aluno' ? `<label class="campo peq" style="min-width:170px">Turma<select data-turma="${u.id}" style="min-height:44px"><option value="">Sem turma</option>${mods.map(m => `<option value="${m}" ${u.modulo===m?'selected':''}>Módulo ${m}</option>`).join('')}</select></label>` : ''}
       <div class="linha"><button class="btn btn-linha btn-peq" data-edit="${u.id}">Editar</button>${u.tem_senha ? `<button class="btn btn-linha btn-peq" data-pin="${u.id}">Esqueceu a senha</button>` : ''}
-      ${u.id !== painel.eu ? `<button class="btn ${u.ativo ? 'btn-perigo' : 'btn-verde'} btn-peq" data-ativo="${u.id}">${u.ativo ? 'Desativar' : 'Reativar'}</button>` : ''}</div></div><div class="extra"></div></div>`).join('')}`, 'alunos');
+      ${u.id !== painel.eu ? `<button class="btn ${u.ativo ? 'btn-perigo' : 'btn-verde'} btn-peq" data-ativo="${u.id}">${u.ativo ? 'Desativar' : 'Reativar'}</button>` : ''}</div></div><div class="extra"></div></div>`).join('') + '</div>' : '').join('')}`, 'alunos');
+  app.querySelectorAll('[data-turma]').forEach(sl => sl.addEventListener('change', async () => {
+    try { painel = await rpc('escola_prof_turma', {p_token: tk(), p_id: sl.dataset.turma, p_modulo: sl.value ? +sl.value : null}); aviso('Turma atualizada.'); profAlunos(); } catch(e){ aviso(e.message, true); } }));
   document.getElementById('copMsg').addEventListener('click', () => copiar(msg));
   document.getElementById('fNovo').addEventListener('submit', async ev => { ev.preventDefault();
     try { await rpc('escola_prof_salvar_usuario', {p_token: tk(), p_id: null, p_nome: document.getElementById('nNome').value, p_celular: null, p_papel: document.getElementById('nPapel').value, p_gerar_pin: false});
@@ -561,15 +600,15 @@ function profPresenca(){
   const ab = abasModulo(painel.aulas, 'escola_mod_prof', l => `${l.filter(a=>a.liberada_em).length} de ${l.length} liberadas`);
   const libs = ab.lista; const salva = +store.get('escola_pres_aula'); const ultimaLib = libs.filter(a => a.liberada_em).pop();
   const sel = libs.some(a => a.id === salva) ? salva : (ultimaLib || libs[0]).id;
-  const al = alunos().filter(u => u.ativo);
+  const ft = filtroTurma(ab.sel, turmaDoModulo(ab.sel, libs)); const al = ft.lista;
   const marcados = al.filter(u => (u.presencas || {})[sel] != null).length;
-  tela(cabProf('Presença') + ab.html + `<label class="campo" for="pAula">Lição<select id="pAula">${libs.map(a => `<option value="${a.id}" ${a.id===sel?'selected':''}>${a.numero}. ${esc(a.titulo)}</option>`).join('')}</select></label>
+  tela(cabProf('Presença') + ab.html + ft.html + `<label class="campo" for="pAula">Lição<select id="pAula">${libs.map(a => `<option value="${a.id}" ${a.id===sel?'selected':''}>${a.numero}. ${esc(a.titulo)}</option>`).join('')}</select></label>
     <p class="sub peq">Toque em “Presente” ou “Faltou” para cada aluno; salva na hora (${marcados} de ${al.length} marcados). Se a aula foi pelo <b>Ao vivo</b>, dá para lançar a presença de todos de uma vez no painel da aula ao vivo.</p>
     <div class="grade-prof">${al.length ? al.map(u => { const p = (u.presencas || {})[sel];
-      return `<div class="cartao"><div class="linha entre"><h3>${esc(u.nome)}</h3><div class="pres-bot" data-al="${u.id}">
+      return `<div class="cartao"><div class="linha entre"><h3>${esc(u.nome)}${seloTurma(u, ab.sel)}</h3><div class="pres-bot" data-al="${u.id}">
         <button class="btn btn-linha btn-peq ${p===true?'ativo-p':''}" data-v="1" aria-pressed="${p===true}">Presente</button>
         <button class="btn btn-linha btn-peq ${p===false?'ativo-f':''}" data-v="0" aria-pressed="${p===false}">Faltou</button></div></div></div>`; }).join('') : '<p>Nenhum aluno cadastrado ainda.</p>'}</div>`, 'presenca');
-  ligarAbas('escola_mod_prof', profPresenca);
+  ligarAbas('escola_mod_prof', profPresenca); ligarVerTodos(profPresenca);
   document.getElementById('pAula').addEventListener('change', e => { store.set('escola_pres_aula', e.target.value); profPresenca(); });
   app.querySelectorAll('.pres-bot button').forEach(b => b.addEventListener('click', async () => {
     const box = b.parentElement, aid = box.dataset.al, val = b.dataset.v === '1';
@@ -583,14 +622,49 @@ function profPresenca(){
 function profNotas(){
   const ab = abasModulo(painel.aulas, 'escola_mod_prof', l => `${l.length} lições`);
   const aulas = ab.lista; const ids = new Set(aulas.map(a => String(a.id)));
-  const linhas = alunos().map(u => { const ns = Object.entries(u.notas || {}).filter(([k]) => ids.has(k)).map(([,n]) => +n.nota);
+  const ft = filtroTurma(ab.sel, turmaDoModulo(ab.sel, aulas));
+  const linhas = ft.lista.map(u => { const ns = Object.entries(u.notas || {}).filter(([k]) => ids.has(k)).map(([,n]) => +n.nota);
     const pres = Object.entries(u.presencas || {}).filter(([k]) => ids.has(k)).map(([,v]) => v); const p = pres.filter(Boolean).length;
-    return `<tr><td>${esc(u.nome)}</td>${aulas.map(a => { const n = (u.notas || {})[a.id]; const pr = (u.presencas || {})[a.id];
+    return `<tr><td>${esc(u.nome)}${seloTurma(u, ab.sel)}</td>${aulas.map(a => { const n = (u.notas || {})[a.id]; const pr = (u.presencas || {})[a.id];
       return `<td class="n">${n ? nota(n.nota) + (n.corrigida ? '' : '*') : '–'}${pr === true ? ' ✓' : pr === false ? ' ✗' : ''}</td>`; }).join('')}
       <td class="n"><b>${nota(media(ns))}</b></td><td class="n">${p}/${pres.length}</td></tr>`; }).join('');
-  tela(cabProf('Notas') + ab.html + `<h2>${esc(nomeModulo(ab.sel))}</h2><p class="sub peq">Nota de cada lição (0 a 10). * = ainda falta corrigir questão de escrever. ✓ presente · ✗ faltou. Arraste a tabela para o lado para ver todas as lições.</p>
+  tela(cabProf('Notas') + ab.html + `<h2>${esc(nomeModulo(ab.sel))}</h2>${ft.html}
+    <div class="cartao destaque"><h3>Boletim para enviar ou imprimir</h3><p class="sub peq">Gera uma lista com o nome e as notas de cada aluno, em texto simples. Dá para mandar como mensagem no WhatsApp (não precisa abrir link nem arquivo) ou imprimir no papel.</p>
+      <label class="campo peq">O que incluir<select id="bolEscopo" style="min-height:44px"><option value="mod">Só o Módulo ${ab.sel} (turma deste módulo)</option><option value="todos">Todos os módulos, separados por turma</option></select></label>
+      <div class="linha"><button class="btn btn-verde btn-peq" id="bolZap">Enviar pelo WhatsApp</button><button class="btn btn-linha btn-peq" id="bolCopiar">Copiar texto</button><button class="btn btn-linha btn-peq" id="bolImprimir">Imprimir</button></div></div>
+    <p class="sub peq">Nota de cada lição (0 a 10). * = ainda falta corrigir questão de escrever. ✓ presente · ✗ faltou. Arraste a tabela para o lado para ver todas as lições.</p>
     <div class="tabela-wrap"><table><thead><tr><th>Aluno</th>${aulas.map(a => `<th class="n" title="${esc(a.titulo)}">L${a.numero}</th>`).join('')}<th class="n">Média</th><th class="n">Presença</th></tr></thead><tbody>${linhas || `<tr><td colspan="${aulas.length+3}">Nenhum aluno ainda.</td></tr>`}</tbody></table></div>`, 'notas');
-  ligarAbas('escola_mod_prof', profNotas);
+  ligarAbas('escola_mod_prof', profNotas); ligarVerTodos(profNotas);
+  const texto = () => boletimTexto(document.getElementById('bolEscopo').value === 'todos' ? null : ab.sel);
+  document.getElementById('bolZap').addEventListener('click', () => window.open('https://wa.me/?text=' + encodeURIComponent(texto()), '_blank', 'noopener'));
+  document.getElementById('bolCopiar').addEventListener('click', () => copiar(texto()));
+  document.getElementById('bolImprimir').addEventListener('click', () => imprimirBoletim(texto()));
+}
+
+// Boletim em texto simples: nome, média, atividades feitas e presença, por módulo/turma
+function boletimTexto(soModulo){
+  const mods = porModulo(painel.aulas).filter(([m]) => soModulo == null || m === soModulo);
+  const hoje = new Date().toLocaleDateString('pt-BR', {timeZone: TZ});
+  let t = `ESCOLA DE LÍDERES – MEDE\nBoletim de notas · ${hoje}\n`;
+  mods.forEach(([m, aulas]) => {
+    const libs = aulas.filter(a => a.liberada_em); const ids = new Set(aulas.map(a => String(a.id)));
+    const tm = turmaDoModulo(m, aulas); const lista = [...tm.daTurma, ...tm.outros];
+    t += `\n━━━━━━━━━━━━━━━\n${nomeModulo(m).toUpperCase()}\n${libs.length} de ${aulas.length} lições liberadas\n━━━━━━━━━━━━━━━\n`;
+    if (!lista.length) { t += 'Nenhum aluno nesta turma.\n'; return; }
+    lista.sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR')).forEach((u, i) => {
+      const ns = Object.entries(u.notas || {}).filter(([k]) => ids.has(k));
+      const pres = Object.entries(u.presencas || {}).filter(([k]) => ids.has(k)).map(([,v]) => v);
+      const mediaTxt = ns.length ? nota(media(ns.map(([,n]) => +n.nota))) : '–';
+      const porLicao = aulas.filter(a => (u.notas || {})[a.id]).map(a => `L${a.numero}: ${nota(u.notas[a.id].nota)}`).join(' | ');
+      t += `\n${i+1}. ${u.nome}${u.modulo !== m ? ` (${nomeTurma(u.modulo)})` : ''}\n   Média: ${mediaTxt} · Atividades: ${ns.length} de ${libs.length}${pres.length ? ` · Presença: ${pres.filter(Boolean).length}/${pres.length}` : ''}\n${porLicao ? `   ${porLicao}\n` : ''}`;
+    });
+  });
+  return t + '\n(Notas de 0 a 10. L1 = Lição 1.)';
+}
+function imprimirBoletim(texto){
+  let el = document.getElementById('impressao');
+  if (!el) { el = document.createElement('pre'); el.id = 'impressao'; document.body.appendChild(el); }
+  el.textContent = texto; window.print();
 }
 
 async function telaEntregas(id){
